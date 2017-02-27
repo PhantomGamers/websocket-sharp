@@ -801,6 +801,7 @@ namespace WebSocketSharp.Server
       _listener = new TcpListener (address, port);
       _log = new Logger ();
       _services = new WebSocketServiceManager (_log);
+      _listener.Server.SetSocketOption(SocketOptionLevel.IPv6, (SocketOptionName)27, 0);
       _sync = new object ();
     }
 
