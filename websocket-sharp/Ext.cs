@@ -1076,12 +1076,14 @@ namespace WebSocketSharp
     internal static string TrimSlashFromEnd (this string value)
     {
       var ret = value.TrimEnd ('/');
+
       return ret.Length > 0 ? ret : "/";
     }
 
     internal static string TrimSlashOrBackslashFromEnd (this string value)
     {
       var ret = value.TrimEnd ('/', '\\');
+
       return ret.Length > 0 ? ret : value[0].ToString ();
     }
 
@@ -1497,8 +1499,9 @@ namespace WebSocketSharp
           return true;
       }
 
-      var host = System.Net.Dns.GetHostName ();
-      var addrs = System.Net.Dns.GetHostAddresses (host);
+      var name = System.Net.Dns.GetHostName ();
+      var addrs = System.Net.Dns.GetHostAddresses (name);
+
       foreach (var addr in addrs) {
         if (address.Equals (addr))
           return true;
@@ -1944,143 +1947,6 @@ namespace WebSocketSharp
     }
 
     /// <summary>
-    /// Converts the specified byte array to the specified type value.
-    /// </summary>
-    /// <returns>
-    ///   <para>
-    ///   A T converted from <paramref name="source"/>.
-    ///   </para>
-    ///   <para>
-    ///   The default value of T if not converted.
-    ///   </para>
-    /// </returns>
-    /// <param name="source">
-    /// An array of <see cref="byte"/> to convert.
-    /// </param>
-    /// <param name="sourceOrder">
-    ///   <para>
-    ///   One of the <see cref="ByteOrder"/> enum values.
-    ///   </para>
-    ///   <para>
-    ///   It specifies the byte order of <paramref name="source"/>.
-    ///   </para>
-    /// </param>
-    /// <typeparam name="T">
-    ///   <para>
-    ///   The type of the return.
-    ///   </para>
-    ///   <para>
-    ///   <see cref="bool"/>, <see cref="char"/>, <see cref="double"/>,
-    ///   <see cref="float"/>, <see cref="int"/>, <see cref="long"/>,
-    ///   <see cref="short"/>, <see cref="uint"/>, <see cref="ulong"/>,
-    ///   or <see cref="ushort"/>.
-    ///   </para>
-    /// </typeparam>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="source"/> is <see langword="null"/>.
-    /// </exception>
-    [Obsolete ("This method will be removed.")]
-    public static T To<T> (this byte[] source, ByteOrder sourceOrder)
-      where T : struct
-    {
-      if (source == null)
-        throw new ArgumentNullException ("source");
-
-      if (source.Length == 0)
-        return default (T);
-
-      var type = typeof (T);
-      var val = source.ToHostOrder (sourceOrder);
-
-      return type == typeof (Boolean)
-             ? (T)(object) BitConverter.ToBoolean (val, 0)
-             : type == typeof (Char)
-               ? (T)(object) BitConverter.ToChar (val, 0)
-               : type == typeof (Double)
-                 ? (T)(object) BitConverter.ToDouble (val, 0)
-                 : type == typeof (Int16)
-                   ? (T)(object) BitConverter.ToInt16 (val, 0)
-                   : type == typeof (Int32)
-                     ? (T)(object) BitConverter.ToInt32 (val, 0)
-                     : type == typeof (Int64)
-                       ? (T)(object) BitConverter.ToInt64 (val, 0)
-                       : type == typeof (Single)
-                         ? (T)(object) BitConverter.ToSingle (val, 0)
-                         : type == typeof (UInt16)
-                           ? (T)(object) BitConverter.ToUInt16 (val, 0)
-                           : type == typeof (UInt32)
-                             ? (T)(object) BitConverter.ToUInt32 (val, 0)
-                             : type == typeof (UInt64)
-                               ? (T)(object) BitConverter.ToUInt64 (val, 0)
-                               : default (T);
-    }
-
-    /// <summary>
-    /// Converts the specified value to a byte array.
-    /// </summary>
-    /// <returns>
-    /// An array of <see cref="byte"/> converted from <paramref name="value"/>.
-    /// </returns>
-    /// <param name="value">
-    /// A T to convert.
-    /// </param>
-    /// <param name="order">
-    ///   <para>
-    ///   One of the <see cref="ByteOrder"/> enum values.
-    ///   </para>
-    ///   <para>
-    ///   It specifies the byte order of the return.
-    ///   </para>
-    /// </param>
-    /// <typeparam name="T">
-    ///   <para>
-    ///   The type of <paramref name="value"/>.
-    ///   </para>
-    ///   <para>
-    ///   <see cref="bool"/>, <see cref="byte"/>, <see cref="char"/>,
-    ///   <see cref="double"/>, <see cref="float"/>, <see cref="int"/>,
-    ///   <see cref="long"/>, <see cref="short"/>, <see cref="uint"/>,
-    ///   <see cref="ulong"/>, or <see cref="ushort"/>.
-    ///   </para>
-    /// </typeparam>
-    [Obsolete ("This method will be removed.")]
-    public static byte[] ToByteArray<T> (this T value, ByteOrder order)
-      where T : struct
-    {
-      var type = typeof (T);
-      var bytes = type == typeof (Boolean)
-                  ? BitConverter.GetBytes ((Boolean)(object) value)
-                  : type == typeof (Byte)
-                    ? new byte[] { (Byte)(object) value }
-                    : type == typeof (Char)
-                      ? BitConverter.GetBytes ((Char)(object) value)
-                      : type == typeof (Double)
-                        ? BitConverter.GetBytes ((Double)(object) value)
-                        : type == typeof (Int16)
-                          ? BitConverter.GetBytes ((Int16)(object) value)
-                          : type == typeof (Int32)
-                            ? BitConverter.GetBytes ((Int32)(object) value)
-                            : type == typeof (Int64)
-                              ? BitConverter.GetBytes ((Int64)(object) value)
-                              : type == typeof (Single)
-                                ? BitConverter.GetBytes ((Single)(object) value)
-                                : type == typeof (UInt16)
-                                  ? BitConverter.GetBytes ((UInt16)(object) value)
-                                  : type == typeof (UInt32)
-                                    ? BitConverter.GetBytes ((UInt32)(object) value)
-                                    : type == typeof (UInt64)
-                                      ? BitConverter.GetBytes ((UInt64)(object) value)
-                                      : WebSocket.EmptyBytes;
-
-      if (bytes.Length > 1) {
-        if (!order.IsHostOrder ())
-          Array.Reverse (bytes);
-      }
-
-      return bytes;
-    }
-
-    /// <summary>
     /// Converts the order of elements in the specified byte array to
     /// host (this computer architecture) byte order.
     /// </summary>
@@ -2192,56 +2058,6 @@ namespace WebSocketSharp
       );
 
       return ret;
-    }
-
-    /// <summary>
-    /// Sends the specified content data with the HTTP response.
-    /// </summary>
-    /// <param name="response">
-    /// A <see cref="HttpListenerResponse"/> that represents the HTTP response
-    /// used to send the content data.
-    /// </param>
-    /// <param name="content">
-    /// An array of <see cref="byte"/> that specifies the content data to send.
-    /// </param>
-    /// <exception cref="ArgumentNullException">
-    ///   <para>
-    ///   <paramref name="response"/> is <see langword="null"/>.
-    ///   </para>
-    ///   <para>
-    ///   -or-
-    ///   </para>
-    ///   <para>
-    ///   <paramref name="content"/> is <see langword="null"/>.
-    ///   </para>
-    /// </exception>
-    [Obsolete ("This method will be removed.")]
-    public static void WriteContent (
-      this HttpListenerResponse response, byte[] content
-    )
-    {
-      if (response == null)
-        throw new ArgumentNullException ("response");
-
-      if (content == null)
-        throw new ArgumentNullException ("content");
-
-      var len = content.LongLength;
-      if (len == 0) {
-        response.Close ();
-        return;
-      }
-
-      response.ContentLength64 = len;
-
-      var output = response.OutputStream;
-
-      if (len <= Int32.MaxValue)
-        output.Write (content, 0, (int) len);
-      else
-        output.WriteBytes (content, 1024);
-
-      output.Close ();
     }
 
     #endregion

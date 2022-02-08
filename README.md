@@ -277,7 +277,7 @@ namespace Example
     protected override void OnMessage (MessageEventArgs e)
     {
       var msg = e.Data == "BALUS"
-                ? "I've been balused already..."
+                ? "Are you kidding?"
                 : "I'm not available now.";
 
       Send (msg);
@@ -289,6 +289,7 @@ namespace Example
     public static void Main (string[] args)
     {
       var wssv = new WebSocketServer ("ws://dragonsnest.far");
+
       wssv.AddWebSocketService<Laputa> ("/Laputa");
       wssv.Start ();
       Console.ReadKey (true);
@@ -340,13 +341,18 @@ public class Chat : WebSocketBehavior
   private string _suffix;
 
   public Chat ()
-    : this (null)
   {
+    _suffix = String.Empty;
   }
 
-  public Chat (string suffix)
-  {
-    _suffix = suffix ?? String.Empty;
+  public string Suffix {
+    get {
+      return _suffix;
+    }
+
+    set {
+      _suffix = value ?? String.Empty;
+    }
   }
 
   protected override void OnMessage (MessageEventArgs e)
@@ -374,16 +380,15 @@ Creating a new instance of the `WebSocketServer` class.
 
 ```csharp
 var wssv = new WebSocketServer (4649);
+
 wssv.AddWebSocketService<Echo> ("/Echo");
 wssv.AddWebSocketService<Chat> ("/Chat");
-wssv.AddWebSocketService<Chat> ("/ChatWithNyan", () => new Chat (" Nyan!"));
+wssv.AddWebSocketService<Chat> ("/ChatWithNyan", s => s.Suffix = " Nyan!");
 ```
 
-You can add any WebSocket service to your `WebSocketServer` with the specified behavior and absolute path to the service, by using the `WebSocketServer.AddWebSocketService<TBehaviorWithNew> (string)` or `WebSocketServer.AddWebSocketService<TBehavior> (string, Func<TBehavior>)` method.
+You can add any WebSocket service to your `WebSocketServer` with the specified behavior and absolute path to the service, by using the `WebSocketServer.AddWebSocketService<TBehavior> (string)` or `WebSocketServer.AddWebSocketService<TBehavior> (string, Action<TBehavior>)` method.
 
-The type of `TBehaviorWithNew` must inherit the `WebSocketBehavior` class, and must have a public parameterless constructor.
-
-The type of `TBehavior` must inherit the `WebSocketBehavior` class.
+The type of `TBehavior` must inherit the `WebSocketBehavior` class, and must have a public parameterless constructor.
 
 So you can use a class in the above Step 2 to add the service.
 
@@ -404,12 +409,8 @@ wssv.Start ();
 Stopping the WebSocket server.
 
 ```csharp
-wssv.Stop (code, reason);
+wssv.Stop ();
 ```
-
-The `WebSocketServer.Stop` method is overloaded.
-
-You can use the `WebSocketServer.Stop ()`, `WebSocketServer.Stop (ushort, string)`, or `WebSocketServer.Stop (WebSocketSharp.CloseStatusCode, string)` method to stop the server.
 
 ### HTTP Server with the WebSocket ###
 
@@ -417,13 +418,14 @@ I have modified the `System.Net.HttpListener`, `System.Net.HttpListenerContext`,
 
 So websocket-sharp provides the `WebSocketSharp.Server.HttpServer` class.
 
-You can add any WebSocket service to your `HttpServer` with the specified behavior and path to the service, by using the `HttpServer.AddWebSocketService<TBehaviorWithNew> (string)` or `HttpServer.AddWebSocketService<TBehavior> (string, Func<TBehavior>)` method.
+You can add any WebSocket service to your `HttpServer` with the specified behavior and path to the service, by using the `HttpServer.AddWebSocketService<TBehavior> (string)` or `HttpServer.AddWebSocketService<TBehavior> (string, Action<TBehavior>)` method.
 
 ```csharp
 var httpsv = new HttpServer (4649);
+
 httpsv.AddWebSocketService<Echo> ("/Echo");
 httpsv.AddWebSocketService<Chat> ("/Chat");
-httpsv.AddWebSocketService<Chat> ("/ChatWithNyan", () => new Chat (" Nyan!"));
+httpsv.AddWebSocketService<Chat> ("/ChatWithNyan", s => s.Suffix = " Nyan!");
 ```
 
 For more information, would you see **[Example3]**?
@@ -455,11 +457,7 @@ As a WebSocket server, if you would like to ignore the extensions requested from
 ```csharp
 wssv.AddWebSocketService<Chat> (
   "/Chat",
-  () =>
-    new Chat () {
-      // To ignore the extensions requested from a client.
-      IgnoreExtensions = true
-    }
+  s => s.IgnoreExtensions = true // To ignore the extensions requested from a client.
 );
 ```
 
@@ -495,8 +493,9 @@ As a WebSocket server, you should create a new instance of the `WebSocketServer`
 
 ```csharp
 var wssv = new WebSocketServer (5963, true);
-wssv.SslConfiguration.ServerCertificate =
-  new X509Certificate2 ("/path/to/cert.pfx", "password for cert.pfx");
+wssv.SslConfiguration.ServerCertificate = new X509Certificate2 (
+                                            "/path/to/cert.pfx", "password for cert.pfx"
+                                          );
 ```
 
 ### HTTP Authentication ###
@@ -554,7 +553,7 @@ And if you would like to send the cookies in the handshake request, you should s
 ws.SetCookie (new Cookie ("name", "nobita"));
 ```
 
-As a WebSocket server, if you would like to get the query string included in a handshake request, you should access the `WebSocketBehavior.Context.QueryString` property, such as the following.
+As a WebSocket server, if you would like to get the query string included in a handshake request, you should access the `WebSocketBehavior.QueryString` property, such as the following.
 
 ```csharp
 public class Chat : WebSocketBehavior
@@ -564,7 +563,7 @@ public class Chat : WebSocketBehavior
 
   protected override void OnOpen ()
   {
-    _name = Context.QueryString["name"];
+    _name = QueryString["name"];
   }
 
   ...
@@ -575,31 +574,32 @@ If you would like to get the value of the Origin header included in a handshake 
 
 If you would like to get the cookies included in a handshake request, you should access the `WebSocketBehavior.Context.CookieCollection` property.
 
-And if you would like to validate the Origin header, cookies, or both, you should set each validation for it with your `WebSocketBehavior`, for example, by using the `WebSocketServer.AddWebSocketService<TBehavior> (string, Func<TBehavior>)` method with initializing, such as the following.
+And if you would like to validate the Origin header, cookies, or both, you should set each validation for it with your `WebSocketBehavior`, for example, by using the `WebSocketServer.AddWebSocketService<TBehavior> (string, Action<TBehavior>)` method with initializing, such as the following.
 
 ```csharp
 wssv.AddWebSocketService<Chat> (
   "/Chat",
-  () =>
-    new Chat () {
-      OriginValidator = val => {
-          // Check the value of the Origin header, and return true if valid.
-          Uri origin;
-          return !val.IsNullOrEmpty ()
-                 && Uri.TryCreate (val, UriKind.Absolute, out origin)
-                 && origin.Host == "example.com";
-        },
-      CookiesValidator = (req, res) => {
-          // Check the cookies in 'req', and set the cookies to send to
-          // the client with 'res' if necessary.
-          foreach (Cookie cookie in req) {
-            cookie.Expired = true;
-            res.Add (cookie);
-          }
+  s => {
+    s.OriginValidator = val => {
+        // Check the value of the Origin header, and return true if valid.
+        Uri origin;
 
-          return true; // If valid.
+        return !val.IsNullOrEmpty ()
+               && Uri.TryCreate (val, UriKind.Absolute, out origin)
+               && origin.Host == "example.com";
+      };
+
+    s.CookiesValidator = (req, res) => {
+        // Check the cookies in 'req', and set the cookies to send to
+        // the client with 'res' if necessary.
+        foreach (var cookie in req) {
+          cookie.Expired = true;
+          res.Add (cookie);
         }
-    }
+
+        return true; // If valid.
+      };
+  }
 );
 ```
 
